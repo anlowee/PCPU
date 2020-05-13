@@ -10,7 +10,7 @@ module IM(PC, Instruction);  // 8-bits PC, not 32 bits
 
     initial begin
         Addr = 32'b0;
-        $readmemh("D:\\GitHub\\SCPU\\test.dat", InstrctionMemReadTemp);
+        $readmemh("D:\\GitHub\\PCPU\\test.dat", InstrctionMemReadTemp);
         for (i = 0; i < 254; i = i + 1) begin
             curIns = InstrctionMemReadTemp[i];
             InstrctionMem[Addr] = curIns[31:24];
