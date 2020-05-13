@@ -1,6 +1,6 @@
 `include "ctrl_encode_def.v"
 
-module scpu(
+module pcpu(
     input clk,
     input rst);
 
