@@ -2,7 +2,7 @@
 
 module NPC(PC, NPCOp, RegRs, RegRt, IMM, NPC, PCPLUS4);  // next pc module
     
-   input  [31:0] PC;        // pc
+   input  [31:0] PC;        // pc + 4
    input  [3:0]  NPCOp;     // next pc operation
    input  [25:0] IMM;       // immediate
    input  [31:0] RegRs;       // rs data read from RF, used in jalr and jr
@@ -10,7 +10,7 @@ module NPC(PC, NPCOp, RegRs, RegRt, IMM, NPC, PCPLUS4);  // next pc module
    output reg [31:0] NPC;   // next pc
    output [31:0] PCPLUS4;  // used to store PC + 4 into %ra
    
-   assign PCPLUS4 = PC + 4; // pc + 4
+   assign PCPLUS4 = PC; // pc + 4
    
    always @(*) begin
       case (NPCOp)
