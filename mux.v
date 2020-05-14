@@ -1,21 +1,5 @@
 `include "ctrl_encode_def.v"
 
-module RegDstMux(
-    input [4:0] rt, rd,
-    input [1:0] RegDst,
-    output reg [4:0] A3);
-
-    always @(*) begin
-        case (RegDst)
-            `RD_RT: A3 <= rt;
-            `RD_RD: A3 <= rd;
-            `RD_RA: A3 <= 5'b11111;
-            default:    A3 <= rt;
-        endcase
-    end
-
-endmodule
-
 module ALUSrcMux(
     input [31:0] RD2, Imm32, ShamtImm32,
     input [1:0] ALUSrc,
@@ -50,15 +34,15 @@ module ALUSrcMux0(
 endmodule
 
 module NPCMux(
-    input [31:0] JBNPC, PCPLUS4,
-    input NPC_signal,  // 0-PCPLUS4, 1-JBNPC
+    input [31:0] JBNPC, PC,
+    input NPCSrc,  // 0-PCPLUS4, 1-JBNPC(from NPC)
     output reg [31:0] NPC);
 
     always @(*) begin
-        case (NPC_signal)
-            1'b0:   NPC <= PCPLUS4;
+        case (NPCSrc)
+            1'b0:   NPC <= PC + 4;
             1'b1:   NPC <= JBNPC;
-            default:    NPC <= PCPLUS4;
+            default:    NPC <= PC + 4;
         endcase        
     end
 
@@ -140,7 +124,7 @@ module IDForwardingMuxJumpR(
     always @(*) begin
         case (IDForwardJumpR)
             `FORWARD_EXMEM_PCPLUS4:  RegRs <= EXMEMPCPLUS4Out;
-            `FORWARD_EXMEM_ALURESULT: RegRs <= EXMEMALUResultOut;
+            `FORWARD_EXMEM: RegRs <= EXMEMALUResultOut;
             `FORWARD_RF: RegRs <= RD1;
             default: RegRs <= RD1;
         endcase
@@ -156,7 +140,7 @@ module IDForwardingMuxBranchA(
 
     always @(*) begin
         case (IDForwardBranchA)
-            `FORWARD_EXMEM_ALURESULT: RegRs <= EXMEMALUResultOut;
+            `FORWARD_EXMEM: RegRs <= EXMEMALUResultOut;
             `FORWARD_RF: RegRs <= RD1;
             default: RegRs <= RD1;
         endcase
@@ -172,8 +156,8 @@ module IDForwardingMuxBranchB(
 
     always @(*) begin
         case (IDForwardBranchB)
-            `FORWARD_EXMEM_ALURESULT: RegRt <= EXMEMALUResultOut;
-            `FORWARD_MEMWB: RegRt <= RD2;
+            `FORWARD_EXMEM: RegRt <= EXMEMALUResultOut;
+            `FORWARD_RF: RegRt <= RD2;
             default: RegRt <= RD2;
         endcase
     end
