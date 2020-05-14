@@ -3,7 +3,7 @@
 module IFIDReg(
     input clk,
     input [31:0] InstructionIn,
-    input [9:0] PCIn,
+    input [9:0] PCIn,  // PC + 4
     input IFIDWr,
     output [31:0] PCOut,
     output [31:0] InstructionOut
@@ -27,6 +27,7 @@ endmodule
 module IDEXReg(
     input [31:0] ReadData1In,
     input [31:0] ReadData2In,
+    input [31:0] PCPLUS4In;
     
     input [31:0] ShamtIn, 
     input [31:0] ImmIn,
@@ -52,8 +53,11 @@ module IDEXReg(
     
     output [31:0] ReadData1Out,
     output [31:0] ReadData2Out,
+    output [31:0] PCPLUS4Out,
+
     output [31:0] ShamtOut,
     output [31:0] ImmOut,
+
     output [4:0] RsOut,
     output [4:0] RtOut,
     output [4:0] RdOut,
@@ -75,8 +79,11 @@ module IDEXReg(
 
     reg [31:0] ReadData1Out_r;
     reg [31:0] ReadData2Out_r;
+    reg [31:0] PCPLUS4Out_r;
+
     reg [31:0] ShamtOut_r;
     reg [31:0] ImmOut_r;
+
     reg [4:0] RsOut_r;
     reg [4:0] RtOut_r;
     reg [4:0] RdOut_r;
@@ -95,8 +102,11 @@ module IDEXReg(
 
     assign ReadData1Out = ReadData1Out_r;
     assign ReadData2Out = ReadData2Out_r;
+    assign PCPLUS4Out = PCPLUS4Out_r;
+
     assign ShamtOut = ShamtOut_r;
     assign ImmOut = ImmOut_r;
+
     assign RsOut = RsOut_r;
     assign RtOut = RtOut_r;
     assign RdOut = RdOut_r;
@@ -116,8 +126,11 @@ module IDEXReg(
     always @(*) begin
         ReadData1Out_r <= ReadData1In;
         ReadData2Out_r <= ReadData2In;
+        PCPLUS4Out_r <= PCPLUS4In;
+
         ShamtOut_r <= ShamtIn;
         ImmOut_r <= ImmIn;
+
         RsOut_r <= RsIn;
         RtOut_r <= RtIn;
         RdOut_r <= RdIn;
@@ -139,9 +152,9 @@ endmodule
 
 module EXMEMReg(
     input [31:0] ALUResultIn,
-    input [31:0] ReadData2In,  // used for S-type ins in MEM stage
+    input [31:0] DataInIn,  // used for S-type ins in MEM stage, connected with EXForwadingMuxB output B
     input [4:0] RegDst_RTRDIn,  // rt or rd determined by RegDst from previous stage
-
+    input [31:0] PCPLUS4In,
     // signal
     // WB signal
     input RFWrIn,
@@ -151,8 +164,9 @@ module EXMEMReg(
     input [2:0] DMReIn,
 
     output [31:0] ALUResultOut,
-    output [31:0] ReadData2Out,
+    output [31:0] DataInOut,
     output [4:0] RegDst_RTRDOut,
+    output [31:0] PCPLUS4Out,
 
     //signal
     // WB signal
@@ -164,8 +178,9 @@ module EXMEMReg(
 );
 
     reg [31:0] ALUResultOut_r;
-    reg [31:0] ReadData2Out_r;
+    reg [31:0] DataInOut_r;
     reg [4:0] RegDst_RTRDOut_r;
+    reg [31:0] PCPLUS4Out_r;
 
     reg RFWrOut_r;
     reg [1:0] ToRegOut_r;
@@ -174,8 +189,9 @@ module EXMEMReg(
     reg [2:0] DMReOut_r;
 
     assign ALUResultOut = ALUResultOut_r;
-    assign ReadData2Out = ReadData2Out_r;
+    assign DataInOut = DataInOut_r;
     assign RegDst_RTRDOut = RegDst_RTRDOut_r;
+    assign PCPLUS4Out = PCPLUS4Out_r;
 
     assign RFWrOut = RFWrOut_r;
     assign ToRegOut = ToRegOut_r;     
@@ -185,8 +201,9 @@ module EXMEMReg(
 
     always @(*) begin
         ALUResultOut_r <= ALUResultIn;
-        ReadData2Out_r <= ReadData2In;
+        DataInOut_r <= DataInIn;
         RegDst_RTRDOut_r <= RegDst_RTRDIn;
+        PCPLUS4Out_r <= PCPLUS4In;
 
         RFWrOut_r <= RFWrIn;
         ToRegOut_r <= ToRegIn;    
@@ -201,41 +218,39 @@ module MEMWBReg(
     input [31:0] DataOutIn,  // Data read from DM
     input [31:0] ALUResultIn,
     input [4:0] RegDst_RTRDIn,
+    input [31:0] PCPLUS4In,
 
     // WB signal
     input RFWrIn,
     input [1:0] ToRegIn,  
 
-    output [31:0] DataOutOut,
-    output [31:0] ALUResultOut,
+    output [31:0] RFWD,  // replace ToRegMux
     output [4:0] RegDst_RTRDOut,
 
     // WB signal
     output RFWrOut,
-    output [1:0] ToRegOut
 );
 
-    reg [31:0] DataOutOut_r;
-    reg [31:0] ALUResultOut_r;
+    reg [31:0] RFWD_r;
     reg [4:0] RegDst_RTRDOut_r;
 
-    reg RFWrOut_r;
-    reg [1:0] ToRegOut_r;    
+    reg RFWrOut_r; 
 
-    assign DataOutOut = DataOutOut_r;
-    assign ALUResultOut = ALUResultOut_r;
+    assign RFWD = RFWD_r;
     assign RegDst_RTRDOut = RegDst_RTRDOut_r;
 
-    assign RFWrOut = RFWrOut_r;
-    assign ToRegOut = ToRegOut_r;     
+    assign RFWrOut = RFWrOut_r; 
 
     always @(*) begin
-        DataOutOut_r <= DataOutIn;
-        ALUResultOut_r <= ALUResultIn;
+        case (ToRegIn)
+            `DM2REG:    RFWD_r <= DataOutIn;   
+            `ALU2REG:   RFWD_r <= ALUResultIn;
+            `NPC2REG:   RFWD_r <= PCPLUS4In;
+            default:    RFWD_r <= 32'b0;
+        endcase
         RegDst_RTRDOut_r <= RegDst_RTRDIn;
 
-        RFWrOut_r <= RFWrIn;
-        ToRegOut_r <= ToRegIn;     
+        RFWrOut_r <= RFWrIn;     
     end
 
 endmodule
