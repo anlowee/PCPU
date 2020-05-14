@@ -7,13 +7,12 @@ module PC( clk, rst, NPC, PC, PCWr );
   output reg  [31:0] PC;
 
   always @(posedge clk, posedge rst)
-    if (PCWr) begin 
-      if (rst) 
-        PC <= 32'h0000_0000;
-  //      PC <= 32'h0000_3000;
-      else
-        PC <= NPC;
-    end
+    if (rst) 
+      PC <= 32'h0000_0000;
+//      PC <= 32'h0000_3000;
+    else 
+    if (PCWr)
+      PC <= NPC;
       
 endmodule
 
