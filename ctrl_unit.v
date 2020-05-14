@@ -5,6 +5,7 @@ module ctrl_unit(  // p176
     output reg [1:0] ToReg,  // What write into Reg
     output reg [1:0] ALUSrc,
     output reg RFWr,
+    output reg NPCRegRs,  // determine jalr/jr or branch ins rs into NPC, 0-branch, 1-jr
     output reg [3:0] NPCOp,
     output reg EXTOp,
     output reg ALUSrc0,  // select for A
@@ -20,7 +21,8 @@ module ctrl_unit(  // p176
         RegDst = `RD_RT;  // x
         ALUSrc = `ALUSRC_ZERO;  // x
         ToReg = `DM2REG;  // x
-        RFWr = 1'b0;  
+        RFWr = 1'b0; 
+        NPCRegRs = 1'b0;  // x 
         DMRe = `DMRE_NOP; 
         DMWr = `DMWR_NOP; 
         ALUOp = `ALU_NOP; 
@@ -117,6 +119,7 @@ module ctrl_unit(  // p176
                         DMRe = `DMRE_NOP; 
                         DMWr = `DMWR_NOP; 
                         ALUOp = `ALU_NOP;
+                        NPCRegRs = 1'b1;
                     end
                     `JR:    begin
                         NPCOp = `NPC_JUMPR; 
@@ -127,6 +130,7 @@ module ctrl_unit(  // p176
                         DMRe = `DMRE_NOP; 
                         DMWr = `DMWR_NOP; 
                         ALUOp = `ALU_NOP;
+                        NPCRegRs = 1'b1;
                     end
                 endcase
             end
@@ -237,6 +241,7 @@ module ctrl_unit(  // p176
                 DMWr = `DMWR_NOP; 
                 EXTOp = 1'b1;
                 ALUOp = `ALU_SUB;
+                NPCRegRs = 1'b0;
             end
             `BGTZ:  begin
                 // BGTZ
@@ -249,6 +254,7 @@ module ctrl_unit(  // p176
                 DMWr = `DMWR_NOP;
                 EXTOp = 1'b1; 
                 ALUOp = `ALU_SUB;
+                NPCRegRs = 1'b0;
             end
             `BLEZ:  begin
                 // BLEZ
@@ -261,6 +267,7 @@ module ctrl_unit(  // p176
                 DMWr = `DMWR_NOP; 
                 EXTOp = 1'b1;
                 ALUOp = `ALU_SUB;
+                NPCRegRs = 1'b0;
             end
             `BNE:  begin
                 // BNE
@@ -273,6 +280,7 @@ module ctrl_unit(  // p176
                 DMWr = `DMWR_NOP; 
                 EXTOp = 1'b1;
                 ALUOp = `ALU_SUB;
+                NPCRegRs = 1'b0;
             end
             `BLTZ_BGEZ:  begin
                 // BLTZ and BGEZ
@@ -284,6 +292,7 @@ module ctrl_unit(  // p176
                 DMWr = `DMWR_NOP; 
                 EXTOp = 1'b1;
                 ALUOp = `ALU_SUB;
+                NPCRegRs = 1'b0;
                 if (bgez_bltz == 5'b00000) begin
                     NPCOp = `NPC_BRANCH_BLTZ; 
                 end else begin
