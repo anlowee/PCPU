@@ -17,7 +17,6 @@
 `define FORWARD_IFID    3'b011
 // special jr/jalr
 `define FORWARD_EXMEM_PCPLUS4       3'b100
-`define FORWARD_EXMEM_ALURESULT     3'b101
 `define FORWARD_RF      3'b110
 
 // RegDst control signal
