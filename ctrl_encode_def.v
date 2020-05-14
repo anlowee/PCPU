@@ -10,6 +10,16 @@
 `define NPC_BRANCH_BNE      4'b1000
 `define NPC_NOP             4'B1001
 
+// Forwarding signal
+`define FORWARD_IDEX    3'b000
+`define FORWARD_EXMEM   3'b001
+`define FORWARD_MEMWB   3'b010
+`define FORWARD_IFID    3'b011
+// special jr/jalr
+`define FORWARD_EXMEM_PCPLUS4       3'b100
+`define FORWARD_EXMEM_ALURESULT     3'b101
+`define FORWARD_RF      3'b110
+
 // RegDst control signal
 `define RD_RT     2'b00  // rt
 `define RD_RD     2'b01  // rd
