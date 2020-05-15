@@ -2,6 +2,7 @@
 
 module IFIDReg(
     input clk,
+    input rst,
     input [31:0] InstructionIn,
     input [31:0] PCIn,
     input IFIDWr,
@@ -10,6 +11,11 @@ module IFIDReg(
 );
 
     always @(posedge clk) begin
+        if (rst) begin
+            PCOut <= 32'b0;
+            InstructionOut <= {32{1'b1}};
+        end
+        else
         if (IFIDWr) begin
             PCOut <= PCIn;
             InstructionOut <= InstructionIn;
@@ -19,6 +25,7 @@ module IFIDReg(
 endmodule
 
 module IDEXReg(
+    input clk,
     input rst,
     input [31:0] ReadData1In,
     input [31:0] ReadData2In,
@@ -73,7 +80,7 @@ module IDEXReg(
     output reg [2:0] DMReOut
 );
 
-    always @(*) begin
+    always @(posedge clk) begin
         if (rst) begin
             ReadData1Out <= 32'b0;
             ReadData2Out <= 32'b0;
@@ -138,6 +145,7 @@ module IDEXReg(
 endmodule
 
 module EXMEMReg(
+    input clk,
     input [31:0] ALUResultIn,
     input [31:0] DataInIn,  // used for S-type ins in MEM stage, connected with EXForwadingMuxB output B
     input [4:0] RegDst_RTRDIn,  // rt or rd determined by RegDst from previous stage
@@ -164,7 +172,7 @@ module EXMEMReg(
     output reg [2:0] DMReOut
 ); 
 
-    always @(*) begin
+    always @(posedge clk) begin
         ALUResultOut <= ALUResultIn;
         DataInOut <= DataInIn;
         RegDst_RTRDOut <= RegDst_RTRDIn;
@@ -180,6 +188,7 @@ module EXMEMReg(
 endmodule
 
 module MEMWBReg(
+    input clk,
     input [31:0] DataOutIn,  // Data read from DM
     input [31:0] ALUResultIn,
     input [4:0] RegDst_RTRDIn,
@@ -197,7 +206,7 @@ module MEMWBReg(
     output reg [1:0] ToRegOut  // handle the lw sw hazard(MEM2MEM forward)
 );
 
-    always @(*) begin
+    always @(posedge clk) begin
         case (ToRegIn)
             `DM2REG:    RFWDOut <= DataOutIn;   
             `ALU2REG:   RFWDOut <= ALUResultIn;
