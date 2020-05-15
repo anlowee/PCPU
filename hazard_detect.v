@@ -28,8 +28,23 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
     output reg [2:0] IDForwardBranchB,
     output reg IFIDWr,
     output reg PCWr,
-    output reg rst  // produce a bubble
+    output reg IFIDRst,
+    output reg IDEXRst  // produce a bubble
 );
+
+    initial begin
+        EXForwardA = `FORWARD_IDEX;
+        EXForwardB = `FORWARD_IDEX;
+        EXForwardC = `FORWARD_IDEX;
+        MEMForward = `FORWARD_EXMEM;
+        IDForwardJumpR = `FORWARD_RF;
+        IDForwardBranchA = `FORWARD_RF;
+        IDForwardBranchB = `FORWARD_RF;
+        IFIDWr = 1'b1;
+        PCWr = 1'b1;
+        IFIDRst = 1'b0;
+        IDEXRst = 1'b0;        
+    end
 
     always @(*) begin
         // forward
@@ -44,7 +59,7 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
         // EX forward
         if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
             EXForwardA = `FORWARD_EXMEM;
-        if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+        if ((IDEXDMWr == `DMWR_NOP) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
             EXForwardB = `FORWARD_EXMEM;
         if (((IDEXDMWr == `DMWR_SW) || (IDEXDMWr == `DMWR_SB) || (IDEXDMWr == `DMWR_SH))
             && (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt)))    
@@ -53,7 +68,7 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
             !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
             && (MEMWBRFWr && (MEMWBRegDstRTRD != 5'b0) && (MEMWBRegDstRTRD != 5'b11111) && (MEMWBRegDstRTRD == IDEXRs)))
             EXForwardA = `FORWARD_MEMWB;
-        if (MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
+        if ((IDEXDMWr == `DMWR_NOP) && MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
             !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
             && (MEMWBRFWr && (MEMWBRegDstRTRD != 5'b0) && (MEMWBRegDstRTRD != 5'b11111) && (MEMWBRegDstRTRD == IDEXRt)))
             EXForwardB = `FORWARD_MEMWB;
@@ -69,35 +84,40 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
             MEMForward = `FORWARD_MEMWB;
 
         // ID forward
-        if (EXMEMRFWr && (EXMEMRegDstRTRD == 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))  // jalr/jr
+        if ((IFIDNPCOp == `NPC_JUMPR) && EXMEMRFWr && (EXMEMRegDstRTRD == 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))  // jalr/jr
             IDForwardJumpR = `FORWARD_EXMEM_PCPLUS4;
-        if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
+        if ((IFIDNPCOp == `NPC_JUMPR) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && 
+            (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))
+            IDForwardJumpR = `FORWARD_EXMEM;
+        if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))
             IDForwardBranchA = `FORWARD_EXMEM;
-        if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+        if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IFIDRt))
             IDForwardBranchB = `FORWARD_EXMEM;
 
 
         // stall
         IFIDWr = 1'b1;
         PCWr = 1'b1;
-        rst = 1'b0;
+        IFIDRst = 1'b0;
+        IDEXRst = 1'b0;
         // eg. lw add
         if ((IDEXDMRe == `DMRE_LW) || (IDEXDMRe == `DMRE_LB) || 
         (IDEXDMRe == `DMRE_LH) || (IDEXDMRe == `DMRE_LBU) || (IDEXDMRe == `DMRE_LHU)
             && ((IDEXRt == IFIDRs) || (IDEXRt == IFIDRt))) begin
             IFIDWr = 1'b0;
             PCWr = 1'b0;
-            rst = 1'b1;
+            IDEXRst = 1'b1;
         end
         // eg. add beq
         if (((IFIDNPCOp == `NPC_BRANCH_BEQ) || (IFIDNPCOp == `NPC_BRANCH_BNE) || 
         (IFIDNPCOp == `NPC_BRANCH_BGEZ) || (IFIDNPCOp == `NPC_BRANCH_BGTZ) || 
-        (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ)) && 
+        (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ) ||
+        (IFIDNPCOp == `NPC_JUMPR)) && 
         (IDEXRFWr && (IDEXRegDstRTRD != 5'b0) && (IDEXRegDstRTRD != 5'b11111) && 
         ((IDEXRegDstRTRD == IFIDRs) || (IDEXRegDstRTRD == IFIDRt)))) begin
             IFIDWr = 1'b0;
             PCWr = 1'b0;
-            rst = 1'b1;
+            IDEXRst = 1'b1;
         end
         // eg. lw nop beq
         if (((IFIDNPCOp == `NPC_BRANCH_BEQ) || (IFIDNPCOp == `NPC_BRANCH_BNE) || 
@@ -108,16 +128,15 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
         ((EXMEMRegDstRTRD == IFIDRs) || (EXMEMRegDstRTRD == IFIDRt)))) begin
             IFIDWr = 1'b0;
             PCWr = 1'b0;
-            rst = 1'b1;
+            IDEXRst = 1'b1;
         end
         // eg. jal A; any ins(without prediction)
-        if ((IDEXNPCOp == `NPC_JUMPR) || (IDEXNPCOp == `NPC_JUMP) ||
+        if ((IDEXRst != 1'b1) && ((IFIDNPCOp == `NPC_JUMPR) || (IFIDNPCOp == `NPC_JUMP) ||
             (IFIDNPCOp == `NPC_BRANCH_BEQ) || (IFIDNPCOp == `NPC_BRANCH_BNE) || 
             (IFIDNPCOp == `NPC_BRANCH_BGEZ) || (IFIDNPCOp == `NPC_BRANCH_BGTZ) || 
-            (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ)) begin
+            (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ))) begin
             IFIDWr = 1'b0;
-            PCWr = 1'b0;
-            rst = 1'b1;
+            IFIDRst = 1'b1;
         end
     end
 
