@@ -12,6 +12,7 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
     input [2:0] IDEXDMRe,
     input [1:0] IDEXDMWr,
     input [3:0] IDEXNPCOp,  // from IDEX reg
+    input [4:0] IDEXALUOp,  // used in shamt ins
     input [2:0] EXMEMDMRe,
     input [1:0] EXMEMDMWr,
     input [1:0] MEMWBToReg,
@@ -57,20 +58,48 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
         IDForwardBranchB = `FORWARD_RF;
 
         // EX forward
-        if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
+        if ((IDEXALUOp != `ALU_SLL) && (IDEXALUOp != `ALU_SRA) && 
+            (IDEXALUOp != `ALU_SRL) &&  
+            EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
             EXForwardA = `FORWARD_EXMEM;
-        if ((IDEXDMWr == `DMWR_NOP) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+        if ((IDEXALUOp != `ALU_SLL) && (IDEXALUOp != `ALU_SRA) && 
+            (IDEXALUOp != `ALU_SRL) && 
+            (IDEXDMWr == `DMWR_NOP) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+            EXForwardB = `FORWARD_EXMEM;
+        if (((IDEXALUOp == `ALU_SLL) || (IDEXALUOp == `ALU_SRA) || 
+            (IDEXALUOp == `ALU_SRL)) && 
+            (IDEXDMWr == `DMWR_NOP) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+            EXForwardA = `FORWARD_EXMEM;
+        if (((IDEXALUOp == `ALU_SLL) || (IDEXALUOp == `ALU_SRA) || 
+            (IDEXALUOp == `ALU_SRL)) && 
+            (IDEXDMWr == `DMWR_NOP) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
             EXForwardB = `FORWARD_EXMEM;
         if (((IDEXDMWr == `DMWR_SW) || (IDEXDMWr == `DMWR_SB) || (IDEXDMWr == `DMWR_SH))
             && (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt)))    
             EXForwardC = `FORWARD_EXMEM;
-        if (MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
+        if ((IDEXALUOp != `ALU_SLL) && (IDEXALUOp != `ALU_SRA) && 
+            (IDEXALUOp != `ALU_SRL) && 
+            MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
             !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRs))
             && (MEMWBRFWr && (MEMWBRegDstRTRD != 5'b0) && (MEMWBRegDstRTRD != 5'b11111) && (MEMWBRegDstRTRD == IDEXRs)))
             EXForwardA = `FORWARD_MEMWB;
-        if ((IDEXDMWr == `DMWR_NOP) && MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
+        if ((IDEXALUOp != `ALU_SLL) && (IDEXALUOp != `ALU_SRA) && 
+            (IDEXALUOp != `ALU_SRL) && 
+            (IDEXDMWr == `DMWR_NOP) && MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
             !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
             && (MEMWBRFWr && (MEMWBRegDstRTRD != 5'b0) && (MEMWBRegDstRTRD != 5'b11111) && (MEMWBRegDstRTRD == IDEXRt)))
+            EXForwardB = `FORWARD_MEMWB;
+        if (((IDEXALUOp == `ALU_SLL) || (IDEXALUOp == `ALU_SRA) || 
+            (IDEXALUOp == `ALU_SRL)) && 
+            (IDEXDMWr == `DMWR_NOP) && MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
+            !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+            && (MEMWBRFWr && (MEMWBRegDstRTRD != 5'b0) && (MEMWBRegDstRTRD != 5'b11111) && (MEMWBRegDstRTRD == IDEXRt)))
+            EXForwardA = `FORWARD_MEMWB;
+        if (((IDEXALUOp == `ALU_SLL) || (IDEXALUOp == `ALU_SRA) || 
+            (IDEXALUOp == `ALU_SRL)) && 
+            (IDEXDMWr == `DMWR_NOP) && MEMWBRFWr && (MEMWBRegDstRTRD != 0) && 
+            !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
+            && (MEMWBRFWr && (MEMWBRegDstRTRD != 5'b0) && (MEMWBRegDstRTRD != 5'b11111) && (MEMWBRegDstRTRD == IDEXRs)))
             EXForwardB = `FORWARD_MEMWB;
         if (((IDEXDMWr == `DMWR_SW) || (IDEXDMWr == `DMWR_SB) || (IDEXDMWr == `DMWR_SH)) && 
             !(EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IDEXRt))
