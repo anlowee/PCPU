@@ -11,7 +11,7 @@ module DM(clk, Addr, DMRe, DMWr, DataIn, DataOut);  // 8-bits PC, not 32 bits
 
     reg [7:0] DataMem[1023:0];
    
-   always @(posedge clk) begin
+   always @(negedge clk) begin
       case (DMWr)
          `DMWR_SW:   begin
             DataMem[Addr] <= DataIn[7:0];
