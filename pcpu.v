@@ -62,7 +62,8 @@ module pcpu(
     wire [2:0] IDForwardBranchB;
     wire IFIDWr;
     wire PCWr;
-    wire HDRst;  // rst
+    wire IFIDRst;
+    wire IDEXRst;  // rst
 
     // NPC
     wire [31:0] NPCOut;
@@ -132,6 +133,7 @@ module pcpu(
 
     IFIDReg IFIDReg(
         .clk(clk),
+        .rst(IFIDRst),
         .InstructionIn(IM2IFIDRegIns),
         .PCIn(pc),
         .IFIDWr(IFIDWr),
@@ -159,6 +161,38 @@ module pcpu(
         .DMWr(DMWr),
         .DMRe(DMRe),
         .EXTOp(EXTOp)
+    );
+
+    hazard_detect hazard_detect(
+        .EXMEMRFWr(EXMEMReg2MEMRFWr),
+        .IDEXRFWr(IDEXReg2EXRFWr),
+        .IDEXRegDstRTRD(IDEXReg2EXRegDstRTRD),
+        .EXMEMRegDstRTRD(EXMEMReg2MEMRegDstRTRD),
+        .IDEXRs(IDEXReg2EXRs),
+        .IDEXRt(IDEXReg2EXRt),
+        .MEMWBRFWr(MEMWBReg2WBRFWr),
+        .MEMWBRegDstRTRD(MEMWBReg2WBRegDstRTRD),
+        .IDEXDMRe(IDEXReg2EXDMRe),
+        .IDEXDMWr(IDEXReg2EXDMWr),
+        .IDEXNPCOp(IDEXReg2EXNPCOp),
+        .EXMEMDMRe(EXMEMReg2MEMDMRe),
+        .EXMEMDMWr(EXMEMReg2MEMDMWr),
+        .MEMWBToReg(MEMWBReg2WBToReg),
+        .IFIDNPCOp(NPCOp),
+        .IFIDRs(IFIDReg2IDIns[25:21]),
+        .IFIDRt(IFIDReg2IDIns[20:16]),
+
+        .EXForwardA(EXForwardA),
+        .EXForwardB(EXForwardB),
+        .EXForwardC(EXForwardC),
+        .MEMForward(MEMForward),
+        .IDForwardJumpR(IDForwardJumpR),
+        .IDForwardBranchA(IDForwardBranchA),
+        .IDForwardBranchB(IDForwardBranchB),
+        .IFIDWr(IFIDWr),
+        .PCWr(PCWr),
+        .IFIDRst(IFIDRst),
+        .IDEXRst(IDEXRst)
     );
 
     RF RF(
@@ -233,7 +267,8 @@ module pcpu(
     );
 
     IDEXReg IDEXReg(
-        .rst(HDRst),
+        .clk(clk),
+        .rst(IDEXRst),
         .ReadData1In(RFDataOut1),
         .ReadData2In(RFDataOut2),
         .PCPLUS4In(pcplus4),
@@ -330,6 +365,7 @@ module pcpu(
     );
 
     EXMEMReg EXMEMReg(
+        .clk(clk),
         .ALUResultIn(ALUResult),
         .DataInIn(EXForwardingMuxCOut),
         .RegDst_RTRDIn(IDEXReg2EXRegDstRTRD),
@@ -370,6 +406,7 @@ module pcpu(
     );
 
     MEMWBReg MEMWBReg(
+        .clk(clk),
         .DataOutIn(DMDataOut),
         .ALUResultIn(EXMEMReg2MEMALUResult),
         .RegDst_RTRDIn(EXMEMReg2MEMRegDstRTRD),
