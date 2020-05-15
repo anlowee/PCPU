@@ -17,6 +17,21 @@ module ctrl_unit(  // p176
     output reg [1:0] DMWr,
     output reg [2:0] DMRe);
 
+    initial begin 
+        NPCOp = `NPC_PLUS4;  
+        RegDst = `RD_RT;  // x
+        ALUSrc = `ALUSRC_ZERO;  // x
+        ToReg = `DM2REG;  // x
+        RFWr = 1'b0; 
+        NPCRegRs = 1'b0;  // x 
+        NPCSrc = 1'b0;
+        DMRe = `DMRE_NOP; 
+        DMWr = `DMWR_NOP; 
+        ALUOp = `ALU_NOP; 
+        ALUSrc0 = 1'b0;
+        EXTOp = 1'b1;
+    end
+
     always @(*) begin
         NPCOp = `NPC_PLUS4;  
         RegDst = `RD_RT;  // x
@@ -114,7 +129,7 @@ module ctrl_unit(  // p176
                     end
                     `JALR:  begin
                         NPCOp = `NPC_JUMPR; 
-                        RegDst = `RD_RA;  // if JALR then write into rd
+                        RegDst = `RD_RD;  // if JALR then write into rd
                         ALUSrc = `ALUSRC_ZERO; // x
                         ToReg = `NPC2REG;  // Next PC write into rd
                         RFWr = 1'b1; 
@@ -422,7 +437,7 @@ module ctrl_unit(  // p176
             end
             default:    begin
                 // NOP
-                $display("over");
+                $display("nop");
                 NPCOp = `NPC_NOP;  
                 RegDst = `RD_RT;  // x
                 ALUSrc = `ALUSRC_ZERO;  // x
