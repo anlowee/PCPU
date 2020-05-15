@@ -175,6 +175,7 @@ module pcpu(
         .IDEXDMRe(IDEXReg2EXDMRe),
         .IDEXDMWr(IDEXReg2EXDMWr),
         .IDEXNPCOp(IDEXReg2EXNPCOp),
+        .IDEXALUOp(IDEXReg2EXALUOp),
         .EXMEMDMRe(EXMEMReg2MEMDMRe),
         .EXMEMDMWr(EXMEMReg2MEMDMWr),
         .MEMWBToReg(MEMWBReg2WBToReg),
