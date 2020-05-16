@@ -19,6 +19,9 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
     input [3:0] IFIDNPCOp,  // from ctrl_unit
     input [4:0] IFIDRs,  // Ins[25:21]
     input [4:0] IFIDRt,  // Ins[20:16]
+    input [31:0] IFIDNPC,  // from NPC
+    input [31:0] IFIDNPC_Predict,  // from NPC
+    input IFIDNPCSrc,  // from control_unit
 
     output reg [2:0] EXForwardA,
     output reg [2:0] EXForwardB,
@@ -30,6 +33,7 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
     output reg IFIDWr,
     output reg PCWr,
     output reg IFIDRst,
+    output reg NPCSrc,
     output reg IDEXRst  // produce a bubble
 );
 
@@ -44,7 +48,8 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
         IFIDWr = 1'b1;
         PCWr = 1'b1;
         IFIDRst = 1'b0;
-        IDEXRst = 1'b0;        
+        IDEXRst = 1'b0;      
+        NPCSrc = 1'b0;  
     end
 
     always @(*) begin
@@ -56,6 +61,7 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
         IDForwardJumpR = `FORWARD_RF;
         IDForwardBranchA = `FORWARD_RF;
         IDForwardBranchB = `FORWARD_RF;
+        NPCSrc = IFIDNPCSrc;
 
         // EX forward
         if ((IDEXALUSrc != `ALUSRC_SHA) &&  
@@ -152,13 +158,23 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
             IDEXRst = 1'b1;
         end
         // eg. jal A; any ins(without prediction)
-        if ((IDEXRst != 1'b1) && ((IFIDNPCOp == `NPC_JUMPR) || (IFIDNPCOp == `NPC_JUMP) ||
-            (IFIDNPCOp == `NPC_BRANCH_BEQ) || (IFIDNPCOp == `NPC_BRANCH_BNE) || 
-            (IFIDNPCOp == `NPC_BRANCH_BGEZ) || (IFIDNPCOp == `NPC_BRANCH_BGTZ) || 
-            (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ))) begin
-            IFIDWr = 1'b0;
-            IFIDRst = 1'b1;
+        if ((IDEXRst != 1'b1) && ((IFIDNPCOp == `NPC_JUMPR) || (IFIDNPCOp == `NPC_JUMP))) begin
+            IFIDRst = 1'b1;  // insert nop
         end
+
+        // predict failed
+        if (((IFIDNPCOp == `NPC_BRANCH_BEQ) || (IFIDNPCOp == `NPC_BRANCH_BNE) || 
+            (IFIDNPCOp == `NPC_BRANCH_BGEZ) || (IFIDNPCOp == `NPC_BRANCH_BGTZ) || 
+            (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ)) &&
+            (IFIDNPC_Predict != IFIDNPC) && (IFIDNPC != {32{1'b1}})) begin
+            IFIDRst = 1'b1;  // insert nop
+        end
+        // predict correctly
+        if (((IFIDNPCOp == `NPC_BRANCH_BEQ) || (IFIDNPCOp == `NPC_BRANCH_BNE) || 
+            (IFIDNPCOp == `NPC_BRANCH_BGEZ) || (IFIDNPCOp == `NPC_BRANCH_BGTZ) || 
+            (IFIDNPCOp == `NPC_BRANCH_BLEZ) || (IFIDNPCOp == `NPC_BRANCH_BLTZ)) &&
+            (IFIDNPC_Predict == IFIDNPC))
+            NPCSrc = 1'b0;
     end
 
 endmodule

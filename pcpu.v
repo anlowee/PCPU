@@ -16,7 +16,7 @@ module pcpu(
     wire RFWr;
     wire EXTOp;
     wire NPCRegRs;
-    wire NPCSrc;
+    wire NPCSrc2HD;  // NPCSrc hazard_detect
     wire [3:0] NPCOp;
     wire [4:0] ALUOp;
     wire [1:0] DMWr;
@@ -64,11 +64,13 @@ module pcpu(
     wire PCWr;
     wire IFIDRst;
     wire IDEXRst;  // rst
+    wire NPCSrc;
 
     // NPC
     wire [31:0] NPCOut;
     wire [31:0] pcplus4;
     wire [31:0] NPCPCIn;
+    wire [31:0] NPC_Predict;
 
     // IFIDReg
     wire [31:0] IM2IFIDRegIns;
@@ -155,7 +157,7 @@ module pcpu(
         .ALUSrc0(ALUSrc0),
         .RFWr(RFWr),
         .NPCRegRs(NPCRegRs),
-        .NPCSrc(NPCSrc),
+        .NPCSrc(NPCSrc2HD),
         .NPCOp(NPCOp),
         .ALUOp(ALUOp),
         .DMWr(DMWr),
@@ -182,6 +184,9 @@ module pcpu(
         .IFIDNPCOp(NPCOp),
         .IFIDRs(IFIDReg2IDIns[25:21]),
         .IFIDRt(IFIDReg2IDIns[20:16]),
+        .IFIDNPC(NPCOut),
+        .IFIDNPC_Predict(NPC_Predict),
+        .IFIDNPCSrc(NPCSrc2HD),
 
         .EXForwardA(EXForwardA),
         .EXForwardB(EXForwardB),
@@ -193,7 +198,8 @@ module pcpu(
         .IFIDWr(IFIDWr),
         .PCWr(PCWr),
         .IFIDRst(IFIDRst),
-        .IDEXRst(IDEXRst)
+        .IDEXRst(IDEXRst),
+        .NPCSrc(NPCSrc)
     );
 
     RF RF(
@@ -250,7 +256,8 @@ module pcpu(
         .RegRt(IDForwardingMuxBranchBOut),
 
         .NPC(NPCOut),
-        .PCPLUS4(pcplus4)
+        .PCPLUS4(pcplus4),
+        .NPC_Predict(NPC_Predict)
     );
 
     EXT EXTImm(

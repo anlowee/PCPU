@@ -12,7 +12,7 @@ module IFIDReg(
 
     always @(posedge clk) begin
         if (rst) begin
-            PCOut <= 32'b0;
+            PCOut <= {32{1'b1}};
             InstructionOut <= {32{1'b1}};
         end
         else
