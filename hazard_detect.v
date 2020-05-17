@@ -133,22 +133,46 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
     end
 
     always @(negedge clk) begin
-        // eg. jal A; any ins(without prediction)
-        if ((IDEXRst != 1'b1) && ((IFIDNPCOp == `NPC_JUMPR) || (IFIDNPCOp == `NPC_JUMP))) begin
+        // eg. add jal
+        if ((IFIDNPCOp == `NPC_JUMPR)
+            && ((IDEXRFWr && (IDEXRegDstRTRD != 5'b0) && (IDEXRegDstRTRD != 5'b11111) && 
+            ((IDEXRegDstRTRD == IFIDRs) || (IDEXRegDstRTRD == IFIDRt))))) begin
+            //$display("1");
             IFIDWr <= 1'b0;
             PCWr <= 1'b0;
-            IFIDRst <= 1'b1;  // insert nop
+            IFIDRst <= 1'b0;
             IDEXRst <= 1'b1;
             NPCSrc <= IFIDNPCSrc;
         end 
         else
+        // eg lw nop jal
+        if ((IFIDNPCOp == `NPC_JUMPR) &&
+            (((EXMEMDMRe == `DMRE_LW) || (EXMEMDMRe == `DMRE_LB) || (EXMEMDMRe == `DMRE_LH)
+            || (EXMEMDMRe == `DMRE_LBU) || (EXMEMDMRe == `DMRE_LHU)) && 
+            ((EXMEMRegDstRTRD == IFIDRs) || (EXMEMRegDstRTRD == IFIDRt)))) begin
+            //$display("2");
+            IFIDWr <= 1'b0;
+            PCWr <= 1'b0;
+            IFIDRst <= 1'b0;
+            IDEXRst <= 1'b1;
+            NPCSrc <= IFIDNPCSrc;
+        end
+        else
+        // eg. jal any ins
+        if ((IFIDNPCOp == `NPC_JUMPR) || (IFIDNPCOp == `NPC_JUMP)) begin
+            //$display("3");
+            IFIDWr <= 1'b0;
+            PCWr <= 1'b1;
+            IFIDRst <= 1'b1;
+            IDEXRst <= 1'b0;
+            NPCSrc <= IFIDNPCSrc;    
+        end
+        else
         // handle prediction
         if (isBranch) begin
-            $display("%d, %d, %d, %d", IDEXRFWr, IDEXRegDstRTRD, IFIDRs, IFIDRt);
             // check stall first
             if ((IDEXRFWr && (IDEXRegDstRTRD != 5'b0) && (IDEXRegDstRTRD != 5'b11111) && 
             ((IDEXRegDstRTRD == IFIDRs) || (IDEXRegDstRTRD == IFIDRt)))) begin
-                $display("4");
                 IFIDWr <= 1'b0;
                 PCWr <= 1'b0;
                 IFIDRst <= 1'b0;
@@ -159,7 +183,6 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
             if ((((EXMEMDMRe == `DMRE_LW) || (EXMEMDMRe == `DMRE_LB) || (EXMEMDMRe == `DMRE_LH)
                 || (EXMEMDMRe == `DMRE_LBU) || (EXMEMDMRe == `DMRE_LHU)) && 
                 ((EXMEMRegDstRTRD == IFIDRs) || (EXMEMRegDstRTRD == IFIDRt)))) begin
-                $display("5");
                 IFIDWr <= 1'b0;
                 PCWr <= 1'b0;
                 IFIDRst <= 1'b0;
@@ -243,40 +266,15 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
         if ((IDEXDMRe == `DMRE_LW) || (IDEXDMRe == `DMRE_LB) || 
         (IDEXDMRe == `DMRE_LH) || (IDEXDMRe == `DMRE_LBU) || (IDEXDMRe == `DMRE_LHU)
             && ((IDEXRt == IFIDRs) || (IDEXRt == IFIDRt))) begin
-            $display("1");
+            //$display("4");
             IFIDWr <= 1'b0;
             PCWr <= 1'b0;
             IFIDRst <= 1'b0;
-            IDEXRst <= 1'b0;
-            NPCSrc <= IFIDNPCSrc;
-        end
-        else 
-        // eg. add beq
-        if ((isBranch || IFIDNPCOp == `NPC_JUMPR) && 
-        (IDEXRFWr && (IDEXRegDstRTRD != 5'b0) && (IDEXRegDstRTRD != 5'b11111) && 
-        ((IDEXRegDstRTRD == IFIDRs) || (IDEXRegDstRTRD == IFIDRt)))) begin
-            $display("2");
-            IFIDWr <= 1'b0;
-            PCWr <= 1'b0;
-            IFIDRst <= 1'b0;
-            IDEXRst <= 1'b0;
-            NPCSrc <= IFIDNPCSrc;
-        end
-        else
-        // eg. lw nop beq
-        if ((isBranch || IFIDNPCOp == `NPC_JUMPR) && 
-        (((EXMEMDMRe == `DMRE_LW) || (EXMEMDMRe == `DMRE_LB) || (EXMEMDMRe == `DMRE_LH)
-         || (EXMEMDMRe == `DMRE_LBU) || (EXMEMDMRe == `DMRE_LHU)) && 
-        ((EXMEMRegDstRTRD == IFIDRs) || (EXMEMRegDstRTRD == IFIDRt)))) begin
-            $display("3");
-            IFIDWr <= 1'b0;
-            PCWr <= 1'b0;
-            IFIDRst <= 1'b0;
-            IDEXRst <= 1'b0;
+            IDEXRst <= 1'b1;
             NPCSrc <= IFIDNPCSrc;
         end
         else begin 
-            $display("%d, %d, %d, %d, %d", isBranch, IDEXRFWr, IDEXRegDstRTRD, IFIDRs, IFIDRt);
+            //$display("5");
             IFIDWr <= 1'b1;
             PCWr <= 1'b1;
             IFIDRst <= 1'b0;
