@@ -65,12 +65,14 @@ module pcpu(
     wire IFIDRst;
     wire IDEXRst;  // rst
     wire NPCSrc;
+    wire predict_signal;
 
     // NPC
     wire [31:0] NPCOut;
     wire [31:0] pcplus4;
     wire [31:0] NPCPCIn;
-    wire [31:0] NPC_Predict;
+    wire [31:0] NPCOccur;
+    wire [31:0] NPCNotOccur;
 
     // IFIDReg
     wire [31:0] IM2IFIDRegIns;
@@ -116,7 +118,10 @@ module pcpu(
     //----------------------IF STAGE----------------------
     NPCMux NPCMux(
         .JBNPC(NPCOut),
+        .IMM(IM2IFIDRegIns[15:0]),
+        .op(IM2IFIDRegIns[31:26]),
         .PC(pc),
+        .predict_signal(predict_signal),
         .NPCSrc(NPCSrc),
 
         .NPC(npc)
@@ -166,6 +171,7 @@ module pcpu(
     );
 
     hazard_detect hazard_detect(
+        .clk(clk),
         .EXMEMRFWr(EXMEMReg2MEMRFWr),
         .IDEXRFWr(IDEXReg2EXRFWr),
         .IDEXRegDstRTRD(IDEXReg2EXRegDstRTRD),
@@ -185,7 +191,8 @@ module pcpu(
         .IFIDRs(IFIDReg2IDIns[25:21]),
         .IFIDRt(IFIDReg2IDIns[20:16]),
         .IFIDNPC(NPCOut),
-        .IFIDNPC_Predict(NPC_Predict),
+        .IFIDNPCOccur(NPCOccur),
+        .IFIDNPCNotOccur(NPCNotOccur),
         .IFIDNPCSrc(NPCSrc2HD),
 
         .EXForwardA(EXForwardA),
@@ -199,7 +206,8 @@ module pcpu(
         .PCWr(PCWr),
         .IFIDRst(IFIDRst),
         .IDEXRst(IDEXRst),
-        .NPCSrc(NPCSrc)
+        .NPCSrc(NPCSrc),
+        .predict_signal(predict_signal)
     );
 
     RF RF(
@@ -257,7 +265,8 @@ module pcpu(
 
         .NPC(NPCOut),
         .PCPLUS4(pcplus4),
-        .NPC_Predict(NPC_Predict)
+        .NPCOccur(NPCOccur),
+        .NPCNotOccur(NPCNotOccur)
     );
 
     EXT EXTImm(
