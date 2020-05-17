@@ -35,15 +35,30 @@ endmodule
 
 module NPCMux(
     input [31:0] JBNPC, PC,
-    input NPCSrc,  // 0-PCPLUS4, 1-JBNPC(from NPC)
+    input [15:0] IMM,
+    input [5:0] op,  // if it is a branch ins, then predict
+    input NPCSrc,  // 0-self, 1-NPC result
+    input predict_signal,  // 1-occur, 0-not occur
     output reg [31:0] NPC);
 
     always @(*) begin
-        case (NPCSrc)
-            1'b0:   NPC <= PC + 4;
-            1'b1:   NPC <= JBNPC;
-            default:    NPC <= PC + 4;
-        endcase        
+        if (NPCSrc == 1'b0) begin
+            if ((op == `BEQ) || (op == `BGTZ) || (op == `BLEZ) ||
+            (op == `BNE) || (op == `BLTZ_BGEZ)) begin
+                if (predict_signal == 1'b0)
+                    NPC <= PC + 4;
+                else 
+                if (predict_signal == 1'b1) begin
+                    NPC <= PC + 4 + {{14{IMM[15]}}, IMM[15:0], 2'b00};
+                end
+            end
+            else
+                NPC <= PC + 4;
+        end
+        else 
+        if (NPCSrc == 1'b1) begin
+            NPC <= JBNPC;
+        end  
     end
 
 endmodule
