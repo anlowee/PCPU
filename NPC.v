@@ -1,6 +1,6 @@
 `include "ctrl_encode_def.v"
 
-module NPC(PC, NPCOp, RegRs, RegRt, IMM, NPC, PCPLUS4, NPC_Predict);  // next pc module
+module NPC(PC, NPCOp, RegRs, RegRt, IMM, NPC, PCPLUS4, NPCOccur, NPCNotOccur);  // next pc module
     
    input  [31:0] PC;        // pc
    input  [3:0]  NPCOp;     // next pc operation
@@ -9,14 +9,16 @@ module NPC(PC, NPCOp, RegRs, RegRt, IMM, NPC, PCPLUS4, NPC_Predict);  // next pc
    input  [31:0] RegRt;     // rt data read from RF, used in beq
    output reg [31:0] NPC;   // next pc
    output [31:0] PCPLUS4;  // used to store PC + 4 into %ra
-   output [31:0] NPC_Predict;
+   output [31:0] NPCOccur;
+   output [31:0] NPCNotOccur;
 
    assign PCPLUS4 = PC + 4; // pc + 4
-   assign NPC_Predict = PC + 4;
+   assign NPCNotOccur = PC + 4;
+   assign NPCOccur = PC + 4 + {{14{IMM[15]}}, IMM[15:0], 2'b00};
    
    always @(*) begin
       case (NPCOp)
-          `NPC_PLUS4:  NPC = PCPLUS4;
+          `NPC_PLUS4:  NPC = PCPLUS4;  // useless
           `NPC_BRANCH_BEQ:    begin
             NPC = (RegRs == RegRt) ? PCPLUS4 + {{14{IMM[15]}}, IMM[15:0], 2'b00} : PCPLUS4;
           end
