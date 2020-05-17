@@ -6,7 +6,7 @@ module ctrl_unit(  // p176
     output reg [1:0] ALUSrc,
     output reg RFWr,
     output reg NPCRegRs,  // determine jalr/jr or branch ins rs into NPC, 0-branch, 1-jr
-    output reg NPCSrc,  // 0-PCPLUS4, 1-JBNPC
+    output reg NPCSrc,  // 0-from PC predict/pcplus4, 1-from npc
     output reg [3:0] NPCOp,
     output reg EXTOp,
     output reg ALUSrc0,  // select for A
