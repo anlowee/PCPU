@@ -122,10 +122,10 @@ module  hazard_detect(  // this unit combine the hazard_detec unit && forwarding
 
         // ID forward
         if ((IFIDNPCOp == `NPC_JUMPR) && EXMEMRFWr && (EXMEMRegDstRTRD == 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))  // jalr/jr
-            IDForwardJumpR = `FORWARD_EXMEM_PCPLUS4;
+            IDForwardJumpR = `FORWARD_EXMEM_PCPLUS4;  // jal $2  jr $31
         if ((IFIDNPCOp == `NPC_JUMPR) && EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && 
             (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))
-            IDForwardJumpR = `FORWARD_EXMEM;
+            IDForwardJumpR = `FORWARD_EXMEM;  // add $2, $1, $3  jr $2
         if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IFIDRs))
             IDForwardBranchA = `FORWARD_EXMEM;
         if (EXMEMRFWr && (EXMEMRegDstRTRD != 5'b0) && (EXMEMRegDstRTRD != 5'b11111) && (EXMEMRegDstRTRD == IFIDRt))
